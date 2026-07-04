@@ -51,30 +51,49 @@ un-wires itself.
 
 ## Install
 
-```bash
-pipx install git+https://github.com/dimavedenyapin/openvast   # recommended
-# or, from a clone:
-git clone https://github.com/dimavedenyapin/openvast && cd openvast
-./install.sh            # checks prerequisites, then pip installs
-```
-
-Run it:
+**One line, no prerequisites** (bootstraps [uv](https://docs.astral.sh/uv/) +
+Python + the `vastai` CLI + openvast, and generates an SSH key):
 
 ```bash
-openvast                # or: python3 -m openvast
+curl -fsSL https://raw.githubusercontent.com/dimavedenyapin/openvast/main/install.sh | sh
 ```
 
-### Prerequisites
+Then authenticate vast.ai and run it:
 
-| Tool | Why |
-|---|---|
-| [`vastai`](https://pypi.org/project/vastai/) CLI, authenticated | manage GPU instances (`vastai set api-key <KEY>`) |
-| Python 3.11+ | runtime |
-| [opencode](https://github.com/opencode-ai/opencode) | auto-wiring + launching/pausing are gated on it being installed |
-| SSH key at `~/.ssh/id_rsa(.pub)` | attaching to instances + the logs / download-% viewer |
+```bash
+vastai set api-key <YOUR_KEY>     # key from https://cloud.vast.ai/account/
+openvast
+```
 
-If `vastai` isn't authenticated or opencode isn't installed, openvast still runs
-in read-only **monitor** mode — a banner explains what's disabled.
+<details>
+<summary>Already have a Python toolchain? Other install methods</summary>
+
+```bash
+# uv
+uv tool install git+https://github.com/dimavedenyapin/openvast
+uv tool install vastai
+
+# or pipx
+pipx install git+https://github.com/dimavedenyapin/openvast
+pipx install vastai
+```
+
+Run with `openvast` (or `python3 -m openvast`).
+</details>
+
+### Requirements
+
+The one-line installer handles all of these except your vast.ai key:
+
+| Tool | Why | Handled by installer |
+|---|---|---|
+| [`vastai`](https://pypi.org/project/vastai/) CLI, authenticated | manage GPU instances | installs it; **you** run `vastai set api-key <KEY>` |
+| Python 3.11+ | runtime | ✅ (via uv) |
+| SSH key at `~/.ssh/id_rsa(.pub)` | attach to instances + logs / download-% viewer | ✅ generated if missing |
+| [opencode](https://github.com/opencode-ai/opencode) | auto-wiring + launch/pause are gated on it | optional — `curl -fsSL https://opencode.ai/install \| bash` |
+
+Without a vast.ai key or opencode, openvast still runs in read-only **monitor**
+mode — a banner explains what's disabled.
 
 ## Usage
 
