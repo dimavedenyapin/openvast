@@ -4,7 +4,7 @@
   <g font-size="34" font-weight="700">
     <text x="140" y="150" xml:space="preserve"><tspan fill="#859289">█▀▀█ █▀▀█ █▀▀█ █▀▀▄</tspan><tspan fill="#a7c080"> █  █ █▀▀█ █▀▀▀ ▀█▀▀</tspan></text>
     <text x="140" y="190" xml:space="preserve"><tspan fill="#859289">█  █ █  █ █▀▀▀ █  █</tspan><tspan fill="#a7c080"> █  █ █▀▀█ ▀▀▀█  █  </tspan></text>
-    <text x="140" y="230" xml:space="preserve"><tspan fill="#859289">▀▀▀▀ █▀▀▀ ▀▀▀▀ ▀▀▀▀</tspan><tspan fill="#a7c080">  ▀▀  ▀▀▀▀ ▀▀▀▀  ▀▀ </tspan></text>
+    <text x="140" y="230" xml:space="preserve"><tspan fill="#859289">▀▀▀▀ █▀▀▀ ▀▀▀▀ ▀  ▀</tspan><tspan fill="#a7c080">  ▀▀  ▀  ▀ ▀▀▀▀  ▀▀ </tspan></text>
   </g>
   <text x="140" y="300" fill="#7fbbb3" font-size="20">❯ </text>
   <text x="164" y="300" fill="#859289" font-size="20">rent GPUs · run llama.cpp · wire your coding agent</text>
