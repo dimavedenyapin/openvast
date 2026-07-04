@@ -1,0 +1,199 @@
+# Model registry for vast-tui.py
+#
+# `min_vram_gb` drives the "only show GPUs that fit" filter in the launch flow.
+# Anything under `defaults` is applied to every model unless the model overrides
+# it. Add a new model by copying an entry and changing key / hf / min_vram_gb.
+#
+# Fields:
+#   key           unique id, used as the label on the vast instance + opencode model id
+#   name          human label shown in the UI and opencode
+#   hf            llama.cpp -hf argument (repo:quant)
+#   min_vram_gb   minimum single-card VRAM; offers below this are hidden
+#   disk_gb       instance disk size (must exceed the model download size)
+#   context       -c context length
+#   port          container port llama-server binds (default 18000)
+#   image         docker image (default from `defaults.image`)
+#   extra_args    extra llama-server flags
+#   output_limit  opencode output token limit
+#   tool_call     advertise tool calling to opencode
+#   reasoning     model emits reasoning_content (thinking)
+#
+# Sizes below are the Q4 GGUF footprint, verified against the HuggingFace API.
+# min_vram_gb is set to the smallest common vast card tier that holds the model
+# plus room for KV cache / compute buffers.
+
+defaults:
+  image: vastai/llama-cpp:b9628-cuda-12.9
+  port: 18000
+  extra_args: "--jinja -fa on --cache-type-k q8_0 --cache-type-v q8_0 --metrics"
+  output_limit: 8192
+  tool_call: true
+  reasoning: true
+
+default_model: qwen3.6-35b-a3b
+
+models:
+  # ----------------------------------------------------------------- 16 GB tier
+  - key: gpt-oss-20b
+    name: gpt-oss 20B (OpenAI, Q4)         # ~11.6 GB · reasoning MoE, fast
+    hf: unsloth/gpt-oss-20b-GGUF:Q4_K_M
+    min_vram_gb: 16
+    disk_gb: 50
+    context: 65536
+
+  - key: qwen3-14b
+    name: Qwen3 14B (Q4)                   # ~9.0 GB
+    hf: unsloth/Qwen3-14B-GGUF:Q4_K_M
+    min_vram_gb: 16
+    disk_gb: 50
+    context: 65536
+
+  - key: phi-4
+    name: Phi-4 14B (Q4)                   # ~8.9 GB · reasoning-light
+    hf: unsloth/phi-4-GGUF:Q4_K_M
+    min_vram_gb: 16
+    disk_gb: 50
+    context: 16384
+    reasoning: false
+
+  - key: gemma-4-12b
+    name: Gemma 4 12B dense (Q4)           # ~7.1 GB · vision (verify arch support)
+    hf: unsloth/gemma-4-12b-it-GGUF:Q4_K_M
+    min_vram_gb: 16
+    disk_gb: 50
+    context: 65536
+    reasoning: false
+
+  # ----------------------------------------------------------------- 24 GB tier
+  - key: devstral-small-2507
+    name: Devstral Small 2507 24B (Q4)     # ~14.3 GB · agentic CODING specialist
+    hf: unsloth/Devstral-Small-2507-GGUF:Q4_K_M
+    min_vram_gb: 24
+    disk_gb: 60
+    context: 65536
+    reasoning: false
+
+  - key: mistral-small-3.2-24b
+    name: Mistral Small 3.2 24B (Q4)       # ~14.3 GB · general + tools, vision
+    hf: unsloth/Mistral-Small-3.2-24B-Instruct-2506-GGUF:Q4_K_M
+    min_vram_gb: 24
+    disk_gb: 60
+    context: 65536
+    reasoning: false
+
+  - key: gemma-3-27b
+    name: Gemma 3 27B (Q4)                 # ~16.5 GB · general, vision, 128K
+    hf: unsloth/gemma-3-27b-it-GGUF:Q4_K_M
+    min_vram_gb: 24
+    disk_gb: 60
+    context: 65536
+    reasoning: false
+
+  - key: gemma-4-26b-a4b
+    name: Gemma 4 26B-A4B MoE (Q4)         # ~17 GB · 4B active, 256K, tools, vision (verify arch)
+    hf: unsloth/gemma-4-26B-A4B-it-GGUF:UD-Q4_K_XL
+    min_vram_gb: 24
+    disk_gb: 60
+    context: 65536
+    reasoning: false
+
+  - key: qwen3.6-27b
+    name: Qwen3.6 27B dense (Q4)           # ~16.8 GB · newest, strong SWE-bench
+    hf: unsloth/Qwen3.6-27B-GGUF:Q4_K_M
+    min_vram_gb: 24
+    disk_gb: 60
+    context: 65536
+
+  - key: qwen3-32b
+    name: Qwen3 32B dense (Q4)             # ~19.8 GB · strong all-rounder
+    hf: unsloth/Qwen3-32B-GGUF:Q4_K_M
+    min_vram_gb: 24
+    disk_gb: 70
+    context: 40960
+
+  - key: qwen3-coder-30b-a3b
+    name: Qwen3 Coder 30B A3B (Q4)         # ~18.6 GB · agentic coding MoE (fast)
+    hf: unsloth/Qwen3-Coder-30B-A3B-Instruct-GGUF:UD-Q4_K_M
+    min_vram_gb: 24
+    disk_gb: 80
+    context: 65536
+    reasoning: false
+
+  - key: qwen3.6-35b-a3b
+    name: Qwen3.6 35B A3B (Q4)             # ~22.1 GB · default, thinking MoE
+    hf: unsloth/Qwen3.6-35B-A3B-GGUF:UD-Q4_K_M
+    min_vram_gb: 24
+    disk_gb: 80
+    context: 65536
+
+  # ----------------------------------------------------------------- 32 GB tier
+  - key: qwen3.6-35b-a3b-q6
+    name: Qwen3.6 35B A3B (Q6, needs 32GB+)  # ~29 GB · higher quality
+    hf: unsloth/Qwen3.6-35B-A3B-GGUF:UD-Q6_K
+    min_vram_gb: 32
+    disk_gb: 96
+    context: 65536
+
+  # ----------------------------------------------------------------- 48 GB tier
+  - key: llama-3.3-70b
+    name: Llama 3.3 70B (Q4)               # ~42.5 GB · heavyweight general
+    hf: unsloth/Llama-3.3-70B-Instruct-GGUF:Q4_K_M
+    min_vram_gb: 48
+    disk_gb: 80
+    context: 32768
+    reasoning: false
+
+  # ----------------------------------------------------------------- 80 GB tier
+  - key: gpt-oss-120b
+    name: gpt-oss 120B (OpenAI, Q4)        # ~62.8 GB · strong agentic reasoning
+    hf: unsloth/gpt-oss-120b-GGUF:Q4_K_M
+    min_vram_gb: 80
+    disk_gb: 110
+    context: 65536
+
+  - key: glm-4.5-air
+    name: GLM-4.5 Air (Q4)                 # ~73 GB · top single-GPU open coder
+    hf: unsloth/GLM-4.5-Air-GGUF:Q4_K_M
+    min_vram_gb: 80
+    disk_gb: 120
+    context: 32768
+
+  - key: qwen3-next-80b-a3b
+    name: Qwen3-Next 80B-A3B (Q6)          # ~65 GB · 3B active, hybrid linear attn = fast + tiny KV
+    hf: unsloth/Qwen3-Next-80B-A3B-Instruct-GGUF:Q6_K
+    min_vram_gb: 80
+    disk_gb: 100
+    context: 65536
+    reasoning: false
+
+  - key: llama-4-scout
+    name: Llama 4 Scout 17B-16E MoE (Q4)   # ~62 GB · multimodal, very long context
+    hf: unsloth/Llama-4-Scout-17B-16E-Instruct-GGUF:UD-Q4_K_XL
+    min_vram_gb: 80
+    disk_gb: 100
+    context: 65536
+    reasoning: false
+
+  # ----------------------------------------------------------------- 96 GB tier (RTX PRO 6000)
+  - key: qwen3-235b-a22b
+    name: Qwen3 235B-A22B (Q2_K_XL, needs 96GB)  # ~89 GB · frontier, tight → small ctx
+    hf: unsloth/Qwen3-235B-A22B-Instruct-2507-GGUF:UD-Q2_K_XL
+    min_vram_gb: 96
+    disk_gb: 120
+    context: 16384
+    reasoning: false
+
+# ---------------------------------------------------------------------------
+# Notes:
+# - "verify arch" models (Gemma 4, Llama 4, Qwen3-Next, Qwen3-235B) load only if
+#   the llama.cpp image is recent enough. b9628 supports Qwen3-Next (>=b7186) and
+#   Llama 4; Gemma 4 is newest — check the `l` log view on first launch, and if
+#   it fails, bump `image:` to a newer vastai/llama-cpp tag.
+# - Qwen3.6-35B == qwen3.6-35b-a3b above (the "35B" is that MoE's total params;
+#   there is no separate dense 35B). An `-MTP` speculative-decoding variant
+#   exists but needs extra draft-model config.
+# - NOT added — needs a Step-enabled llama.cpp fork, not the stock image:
+#   StepFun Step-3.7-Flash — 198B MoE VL. GGUF IQ3_XXS 75.8GB (80GB, tight),
+#   IQ4_XS 105GB (H200 141GB). Set a custom `image:` with Step support to use it.
+# - Too big for one 96GB card even at Q2 (multi-GPU only): GLM-4.6 (216GB),
+#   DeepSeek-V3.1 (405GB), GLM-5 (431GB), MiniMax-M3 (264GB), Kimi-K2.6 (584GB).

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="420" viewBox="0 0 1000 420" font-family="'SF Mono','JetBrains Mono',Menlo,Consolas,monospace">
+  <rect width="1000" height="420" fill="#1e2429"/>
+  <rect x="70" y="70" width="860" height="280" rx="14" fill="#232a2e" stroke="#3a444a" stroke-width="1.5"/>
+  <g font-size="34" font-weight="700">
+    <text x="140" y="150" xml:space="preserve"><tspan fill="#859289">█▀▀█ █▀▀█ █▀▀█ █▀▀▄</tspan><tspan fill="#a7c080"> █  █ █▀▀█ █▀▀▀ ▀█▀▀</tspan></text>
+    <text x="140" y="190" xml:space="preserve"><tspan fill="#859289">█  █ █  █ █▀▀▀ █  █</tspan><tspan fill="#a7c080"> █  █ █▀▀█ ▀▀▀█  █  </tspan></text>
+    <text x="140" y="230" xml:space="preserve"><tspan fill="#859289">▀▀▀▀ █▀▀▀ ▀▀▀▀ ▀▀▀▀</tspan><tspan fill="#a7c080">  ▀▀  ▀▀▀▀ ▀▀▀▀  ▀▀ </tspan></text>
+  </g>
+  <text x="140" y="300" fill="#7fbbb3" font-size="20">❯ </text>
+  <text x="164" y="300" fill="#859289" font-size="20">rent GPUs · run llama.cpp · wire your coding agent</text>
+</svg>
