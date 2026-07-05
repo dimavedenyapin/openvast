@@ -2,7 +2,7 @@
 
 <img src="assets/logo.svg" alt="openvast" width="620">
 
-**A muted terminal dashboard for renting [vast.ai](https://vast.ai) GPUs, running [llama.cpp](https://github.com/ggml-org/llama.cpp) models, and wiring them into your coding agent.**
+**TUI-dashboard for renting [vast.ai](https://vast.ai) GPUs, running [llama.cpp](https://github.com/ggml-org/llama.cpp) models, and wiring them into your coding agent.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-a7c080.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-7fbbb3.svg)](https://www.python.org)
