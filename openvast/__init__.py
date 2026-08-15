@@ -192,6 +192,34 @@ class VastError(RuntimeError):
     pass
 
 
+def _stderr_error(stderr: str) -> str | None:
+    """Extract a real error from vastai's stderr, or None if it's just noise.
+
+    The vast CLI reports API failures on stderr and still exits 0 (see
+    vastai/cli/main.py `_emit_error` -> `break` -> normal return), so a zero
+    exit code alone does not mean the command worked. Two shapes appear:
+    `{"error": true, ..., "msg": "..."}` under --raw, and a plain
+    `Failed with error 400: ...` line otherwise. Deprecation banners and other
+    chatter are ignored.
+    """
+    for line in stderr.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        if line.startswith("{"):
+            try:
+                payload = json.loads(line)
+            except ValueError:
+                continue
+            if isinstance(payload, dict) and payload.get("error"):
+                msg = payload.get("msg") or "unknown error"
+                code = payload.get("status_code")
+                return f"{msg} (status {code})" if code else str(msg)
+        elif line.startswith("Failed with error") or line.startswith("Error:"):
+            return line
+    return None
+
+
 def _run(args: list[str], timeout: int = 60) -> str:
     try:
         proc = subprocess.run(args, capture_output=True, text=True, timeout=timeout)
@@ -201,6 +229,9 @@ def _run(args: list[str], timeout: int = 60) -> str:
         raise VastError(f"timeout running: {' '.join(args)}") from exc
     if proc.returncode != 0:
         raise VastError(proc.stderr.strip() or proc.stdout.strip() or "command failed")
+    err = _stderr_error(proc.stderr)
+    if err:
+        raise VastError(err)
     return proc.stdout
 
 
@@ -512,12 +543,16 @@ def create_instance(offer_id: int, model: Model) -> int:
             "--env", f"-p {model.port}:{model.port}",
             "--onstart-cmd", build_onstart(model),
             "--label", model.key,
+            # Without --raw the CLI prints a python-repr dict; with it we get
+            # JSON on stdout and a JSON error object on stderr (which _run
+            # turns into a VastError, since the CLI exits 0 either way).
+            "--raw",
         ],
         timeout=120,
     )
     m = re.search(r"new_contract['\"]?\s*:\s*(\d+)", out)
     if not m:
-        raise VastError(f"could not parse new instance id from: {out.strip()[:200]}")
+        raise VastError(f"could not parse new instance id from: {out.strip()[:200] or '(no output)'}")
     new_id = int(m.group(1))
     try:  # attach ssh key (best effort)
         _run(["vastai", "attach", "ssh", str(new_id), SSH_PUB_KEY], timeout=60)
