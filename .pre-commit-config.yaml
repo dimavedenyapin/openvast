@@ -1,0 +1,9 @@
+repos:
+  - repo: local
+    hooks:
+      - id: pytest
+        name: Run pytest test suite
+        entry: python -m pytest tests/ -q
+        language: system
+        pass_filenames: false
+        always_run: true
