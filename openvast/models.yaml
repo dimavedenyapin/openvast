@@ -97,8 +97,16 @@ models:
     context: 65536
     reasoning: false
 
+  - key: qwen3.8-27b
+    name: Qwen3.8 27B dense (Q4)           # ~17.1 GB · newest gen, thinking + vision
+    hf: unsloth/Qwen3.8-27B-GGUF:Q4_K_M
+    min_vram_gb: 24
+    disk_gb: 60
+    context: 65536
+    image: vastai/llama-cpp:b10331-cuda-12.9   # released 2026-08-14 — needs a recent build
+
   - key: qwen3.6-27b
-    name: Qwen3.6 27B dense (Q4)           # ~16.8 GB · newest, strong SWE-bench
+    name: Qwen3.6 27B dense (Q4)           # ~16.8 GB · strong SWE-bench
     hf: unsloth/Qwen3.6-27B-GGUF:Q4_K_M
     min_vram_gb: 24
     disk_gb: 60
@@ -189,6 +197,13 @@ models:
 #   the llama.cpp image is recent enough. b9628 supports Qwen3-Next (>=b7186) and
 #   Llama 4; Gemma 4 is newest — check the `l` log view on first launch, and if
 #   it fails, bump `image:` to a newer vastai/llama-cpp tag.
+# - Qwen3.8-27B is the same `qwen3_5` arch as Qwen3.6-27B (dense, hybrid Gated
+#   DeltaNet + gated attention, native vision — llama-server pulls the repo's
+#   mmproj automatically). Only 16 of 64 layers use full attention, so the KV
+#   cache is small and 65536 ctx is cheap; it natively goes to 262144 if you
+#   want more. Thinking is on by default. Pinned to b10331 because the weights
+#   post-date the b9628 default image; drop the `image:` line if b9628 loads it.
+#   Q6_K (22.9 GB) also fits a 32 GB card if you want a higher-quality tier.
 # - Qwen3.6-35B == qwen3.6-35b-a3b above (the "35B" is that MoE's total params;
 #   there is no separate dense 35B). An `-MTP` speculative-decoding variant
 #   exists but needs extra draft-model config.
