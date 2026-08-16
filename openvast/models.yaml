@@ -10,13 +10,17 @@
 #   hf            llama.cpp -hf argument (repo:quant)
 #   min_vram_gb   minimum single-card VRAM; offers below this are hidden
 #   disk_gb       instance disk size (must exceed the model download size)
-#   context       -c context length
+#   context       -c context length (real server window)
+#   opencode_context_pct  opencode limit.context as % of context (set to 75 in
+#                         `defaults:`; override per model). <100 leaves a buffer so
+#                         auto-compact fires before a big turn overshoots the server.
 #   port          container port llama-server binds (default 18000)
 #   image         docker image (default from `defaults.image`)
 #   extra_args    extra llama-server flags
 #   output_limit  opencode output token limit
 #   tool_call     advertise tool calling to opencode
 #   reasoning     model emits reasoning_content (thinking)
+#   reasoning_effort  reasoning effort sent by opencode (default medium)
 #
 # Sizes below are the Q4 GGUF footprint, verified against the HuggingFace API.
 # min_vram_gb is set to the smallest common vast card tier that holds the model
@@ -25,10 +29,12 @@
 defaults:
   image: vastai/llama-cpp:b9628-cuda-12.9
   port: 18000
-  extra_args: "--jinja -fa on --cache-type-k q8_0 --cache-type-v q8_0 --metrics"
+  extra_args: "--jinja -fa on --cache-type-k q8_0 --cache-type-v q8_0 --metrics --parallel 1"
   output_limit: 8192
+  opencode_context_pct: 75   # global: opencode limit.context = context × 75% (buffer for 1-turn overshoot)
   tool_call: true
   reasoning: true
+  reasoning_effort: medium
 
 default_model: qwen3.6-35b-a3b
 
@@ -102,8 +108,9 @@ models:
     hf: unsloth/Qwen3.8-27B-GGUF:Q4_K_M
     min_vram_gb: 24
     disk_gb: 60
-    context: 65536
+    context: 262144
     image: vastai/llama-cpp:b10331-cuda-12.9   # released 2026-08-14 — needs a recent build
+    extra_args: "--jinja -fa on --parallel 1 -t 8 --spec-default --spec-type draft-mtp --spec-draft-n-max 1 --spec-draft-type-k f16 --spec-draft-type-v f16 --cache-type-k q8_0 --cache-type-v q8_0 --temperature 1.0 --top-p 0.95 --top-k 30 --min-p 0.0 --presence-penalty 0.0 --metrics"
 
   - key: qwen3.6-27b
     name: Qwen3.6 27B dense (Q4)           # ~16.8 GB · strong SWE-bench
@@ -132,6 +139,13 @@ models:
     hf: unsloth/Qwen3.6-35B-A3B-GGUF:UD-Q4_K_M
     min_vram_gb: 24
     disk_gb: 80
+    context: 65536
+
+  - key: kat-coder-v25-dev
+    name: KAT-Coder V2.5 Dev 35B A3B (Q4)   # ~21.4 GB · SOTA agentic coding MoE (SWE-bench 69.4)
+    hf: bartowski/Kwaipilot_KAT-Coder-V2.5-Dev-GGUF:Q4_K_M
+    min_vram_gb: 24
+    disk_gb: 60
     context: 65536
 
   # ----------------------------------------------------------------- 32 GB tier
@@ -173,6 +187,13 @@ models:
     disk_gb: 100
     context: 65536
     reasoning: false
+
+  - key: qwen3-coder-next
+    name: Qwen3 Coder Next 80B A3B (Q4)    # ~48.5 GB · coding MoE, hybrid linear attn, 262K
+    hf: unsloth/Qwen3-Coder-Next-GGUF:Q4_K_M
+    min_vram_gb: 80
+    disk_gb: 100
+    context: 65536
 
   - key: llama-4-scout
     name: Llama 4 Scout 17B-16E MoE (Q4)   # ~62 GB · multimodal, very long context

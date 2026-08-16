@@ -117,7 +117,7 @@ overridden. Override the file with `VAST_MODELS_FILE=/path.yaml`, or drop a
 ```yaml
 defaults:
   image: vastai/llama-cpp:b9628-cuda-12.9
-  extra_args: "--jinja -fa on --cache-type-k q8_0 --cache-type-v q8_0 --metrics"
+  extra_args: "--jinja -fa on --cache-type-k q8_0 --cache-type-v q8_0 --metrics --parallel 1"
 default_model: qwen3.6-35b-a3b
 models:
   - key: qwen3.6-35b-a3b
@@ -132,7 +132,35 @@ Ships with ~20 curated models across the **16 / 24 / 32 / 48 / 80 / 96 GB**
 tiers (Qwen3.8, Qwen3.6, Qwen3-Coder, Qwen3-Next, gpt-oss, Gemma, Mistral, Devstral,
 Llama, GLM-4.5-Air, …), each with a verified GGUF size and VRAM requirement.
 Per-model keys: `name`, `hf`, `min_vram_gb`, `disk_gb`, `context`, `port`,
-`image`, `extra_args`, `output_limit`, `tool_call`, `reasoning`.
+`image`, `extra_args`, `output_limit`, `tool_call`, `reasoning`,
+`reasoning_effort`.
+
+### Bundled models
+
+| GPU tier | Model | Key | Quant | Size | Context |
+|---|---|---|---|---|---|
+| 16 GB | gpt-oss 20B (OpenAI) | `gpt-oss-20b` | Q4_K_M | ~11.6 GB | 65536 |
+| 16 GB | Qwen3 14B | `qwen3-14b` | Q4_K_M | ~9.0 GB | 65536 |
+| 16 GB | Phi-4 14B | `phi-4` | Q4_K_M | ~8.9 GB | 16384 |
+| 16 GB | Gemma 4 12B dense | `gemma-4-12b` | Q4_K_M | ~7.1 GB | 65536 |
+| 24 GB | Devstral Small 2507 24B | `devstral-small-2507` | Q4_K_M | ~14.3 GB | 65536 |
+| 24 GB | Mistral Small 3.2 24B | `mistral-small-3.2-24b` | Q4_K_M | ~14.3 GB | 65536 |
+| 24 GB | Gemma 3 27B | `gemma-3-27b` | Q4_K_M | ~16.5 GB | 65536 |
+| 24 GB | Gemma 4 26B-A4B MoE | `gemma-4-26b-a4b` | UD-Q4_K_XL | ~17 GB | 65536 |
+| 24 GB | Qwen3.8 27B dense | `qwen3.8-27b` | Q4_K_M | ~17.1 GB | 262144 |
+| 24 GB | Qwen3.6 27B dense | `qwen3.6-27b` | Q4_K_M | ~16.8 GB | 65536 |
+| 24 GB | Qwen3 32B dense | `qwen3-32b` | Q4_K_M | ~19.8 GB | 40960 |
+| 24 GB | Qwen3 Coder 30B A3B | `qwen3-coder-30b-a3b` | UD-Q4_K_M | ~18.6 GB | 65536 |
+| 24 GB | Qwen3.6 35B A3B *(default)* | `qwen3.6-35b-a3b` | UD-Q4_K_M | ~22.1 GB | 65536 |
+| 24 GB | KAT-Coder V2.5 Dev 35B A3B | `kat-coder-v25-dev` | Q4_K_M | ~21.4 GB | 65536 |
+| 32 GB | Qwen3.6 35B A3B (Q6) | `qwen3.6-35b-a3b-q6` | UD-Q6_K | ~29 GB | 65536 |
+| 48 GB | Llama 3.3 70B | `llama-3.3-70b` | Q4_K_M | ~42.5 GB | 32768 |
+| 80 GB | gpt-oss 120B (OpenAI) | `gpt-oss-120b` | Q4_K_M | ~62.8 GB | 65536 |
+| 80 GB | GLM-4.5 Air | `glm-4.5-air` | Q4_K_M | ~73 GB | 32768 |
+| 80 GB | Qwen3-Next 80B-A3B | `qwen3-next-80b-a3b` | Q6_K | ~65 GB | 65536 |
+| 80 GB | Qwen3 Coder Next 80B A3B | `qwen3-coder-next` | Q4_K_M | ~48.5 GB | 65536 |
+| 80 GB | Llama 4 Scout 17B-16E MoE | `llama-4-scout` | UD-Q4_K_XL | ~62 GB | 65536 |
+| 96 GB | Qwen3 235B-A22B | `qwen3-235b-a22b` | UD-Q2_K_XL | ~89 GB | 16384 |
 
 ### Bundled models
 

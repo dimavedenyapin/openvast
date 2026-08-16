@@ -90,7 +90,7 @@ def _resolve_models_file() -> Path:
 
 MODELS_FILE = _resolve_models_file()
 
-DEFAULT_EXTRA_ARGS = "--jinja -fa on --cache-type-k q8_0 --cache-type-v q8_0 --metrics"
+DEFAULT_EXTRA_ARGS = "--jinja -fa on --cache-type-k q8_0 --cache-type-v q8_0 --metrics --parallel 1"
 
 
 @dataclass
@@ -101,12 +101,14 @@ class Model:
     min_vram_gb: int
     disk_gb: int
     context: int
+    opencode_context_pct: int = 100  # opencode limit.context as % of context (buffer for 1-turn overshoot)
     port: int = 18000
     image: str = IMAGE
     extra_args: str = DEFAULT_EXTRA_ARGS
     output_limit: int = 8192
     tool_call: bool = True
     reasoning: bool = True
+    reasoning_effort: str = "medium"
 
 
 # Built-in fallback used only if models.yaml is missing/unreadable.
@@ -128,12 +130,14 @@ def _model_from_dict(d: dict) -> Model:
         min_vram_gb=int(d["min_vram_gb"]),
         disk_gb=int(d.get("disk_gb", 80)),
         context=int(d.get("context", 65536)),
+        opencode_context_pct=int(d.get("opencode_context_pct", 100)),
         port=int(d.get("port", 18000)),
         image=str(d.get("image") or IMAGE),
         extra_args=str(d.get("extra_args", DEFAULT_EXTRA_ARGS)),
         output_limit=int(d.get("output_limit", 8192)),
         tool_call=bool(d.get("tool_call", True)),
         reasoning=bool(d.get("reasoning", True)),
+        reasoning_effort=str(d.get("reasoning_effort", "medium")),
     )
 
 
@@ -522,7 +526,7 @@ def _ssh_perms_cmd() -> str:
 def build_onstart(model: Model) -> str:
     primary = (
         f"./llama-server -hf {model.hf} --host 0.0.0.0 --port {model.port} "
-        f"-ngl 99 -c {model.context} {model.extra_args}"
+        f"-ngl 999 -c {model.context} {model.extra_args}"
     )
     return (
         f"{_ssh_perms_cmd()} cd {LLAMA_DIR} && "
@@ -686,7 +690,11 @@ def _provider_block(inst: Instance) -> dict:
                 "name": f"{m.name} ({inst.gpu_name})",
                 "temperature": True,
                 "tool_call": m.tool_call,
-                "limit": {"context": m.context, "output": m.output_limit},
+                "options": {"reasoningEffort": m.reasoning_effort},
+                "limit": {
+                    "context": int(round(m.context * m.opencode_context_pct / 100)),
+                    "output": m.output_limit,
+                },
             }
         },
         "options": {
