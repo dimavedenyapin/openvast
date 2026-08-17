@@ -101,6 +101,7 @@ class Model:
     min_vram_gb: int
     disk_gb: int
     context: int
+    context_by_vram: dict[int, int] = field(default_factory=dict)
     opencode_context_pct: int = 100  # opencode limit.context as % of context (buffer for 1-turn overshoot)
     port: int = 18000
     image: str = IMAGE
@@ -109,6 +110,15 @@ class Model:
     tool_call: bool = True
     reasoning: bool = True
     reasoning_effort: str = "medium"
+
+    def context_for_vram(self, gpu_ram_mb: int) -> int:
+        """Largest configured context tier supported by this card's VRAM."""
+        context = self.context
+        for min_gb, tier_context in sorted(self.context_by_vram.items()):
+            # Vast cards commonly report slightly less than their nominal tier.
+            if gpu_ram_mb >= min_gb * 1024 - 1024:
+                context = tier_context
+        return context
 
 
 # Built-in fallback used only if models.yaml is missing/unreadable.
@@ -130,6 +140,9 @@ def _model_from_dict(d: dict) -> Model:
         min_vram_gb=int(d["min_vram_gb"]),
         disk_gb=int(d.get("disk_gb", 80)),
         context=int(d.get("context", 65536)),
+        context_by_vram={
+            int(k): int(v) for k, v in (d.get("context_by_vram") or {}).items()
+        },
         opencode_context_pct=int(d.get("opencode_context_pct", 100)),
         port=int(d.get("port", 18000)),
         image=str(d.get("image") or IMAGE),
@@ -266,6 +279,10 @@ class Instance:
     @property
     def model(self) -> Model:
         return model_for_label(self.label)
+
+    @property
+    def context(self) -> int:
+        return self.model.context_for_vram(self.gpu_ram_mb)
 
     def host_port(self) -> int | None:
         entry = (self.ports or {}).get(f"{self.model.port}/tcp")
@@ -523,10 +540,11 @@ def _ssh_perms_cmd() -> str:
     )
 
 
-def build_onstart(model: Model) -> str:
+def build_onstart(model: Model, gpu_ram_mb: int | None = None) -> str:
+    context = model.context_for_vram(gpu_ram_mb) if gpu_ram_mb else model.context
     primary = (
         f"./llama-server -hf {model.hf} --host 0.0.0.0 --port {model.port} "
-        f"-ngl 999 -c {model.context} {model.extra_args}"
+        f"-ngl 999 -c {context} {model.extra_args}"
     )
     return (
         f"{_ssh_perms_cmd()} cd {LLAMA_DIR} && "
@@ -535,7 +553,7 @@ def build_onstart(model: Model) -> str:
     )
 
 
-def create_instance(offer_id: int, model: Model) -> int:
+def create_instance(offer_id: int, model: Model, gpu_ram_mb: int | None = None) -> int:
     if not Path(SSH_PUB_KEY).is_file():
         raise VastError(f"missing SSH public key: {SSH_PUB_KEY}")
     out = _run(
@@ -545,7 +563,7 @@ def create_instance(offer_id: int, model: Model) -> int:
             "--disk", str(model.disk_gb),
             "--ssh", "--direct",
             "--env", f"-p {model.port}:{model.port}",
-            "--onstart-cmd", build_onstart(model),
+            "--onstart-cmd", build_onstart(model, gpu_ram_mb),
             "--label", model.key,
             # Without --raw the CLI prints a python-repr dict; with it we get
             # JSON on stdout and a JSON error object on stderr (which _run
@@ -692,7 +710,7 @@ def _provider_block(inst: Instance) -> dict:
                 "tool_call": m.tool_call,
                 "options": {"reasoningEffort": m.reasoning_effort},
                 "limit": {
-                    "context": int(round(m.context * m.opencode_context_pct / 100)),
+                    "context": int(round(inst.context * m.opencode_context_pct / 100)),
                     "output": m.output_limit,
                 },
             }
@@ -1109,7 +1127,9 @@ def build_app():
 
         def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
             event.stop()
-            self.dismiss((self.model.key, int(event.row_key.value)))
+            offer_id = int(event.row_key.value)
+            offer = next(o for o in self.offers if o.id == offer_id)
+            self.dismiss((self.model.key, offer.id, offer.gpu_ram_mb))
 
         def on_key(self, event) -> None:
             if event.key == "escape":
@@ -1527,17 +1547,19 @@ def build_app():
                 def after_offer(choice):
                     if not choice:
                         return
-                    mkey, offer_id = choice
+                    mkey, offer_id, gpu_ram_mb = choice
                     self._notify(f"launching {mkey} on offer {offer_id}…")
-                    self.run_worker(lambda: self._do_create(offer_id, mkey), thread=True)
+                    self.run_worker(
+                        lambda: self._do_create(offer_id, mkey, gpu_ram_mb), thread=True
+                    )
 
                 self.push_screen(OfferSelectScreen(model_key), after_offer)
 
             self.push_screen(ModelSelectScreen(), after_model)
 
-        def _do_create(self, offer_id: int, model_key: str) -> None:
+        def _do_create(self, offer_id: int, model_key: str, gpu_ram_mb: int) -> None:
             try:
-                new_id = create_instance(offer_id, MODELS[model_key])
+                new_id = create_instance(offer_id, MODELS[model_key], gpu_ram_mb)
                 self.call_from_thread(self._notify, f"created instance {new_id}", "information")
             except VastError as e:
                 self.call_from_thread(self._notify, f"create failed: {e}", "error")
