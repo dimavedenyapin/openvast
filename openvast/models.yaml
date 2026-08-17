@@ -11,6 +11,8 @@
 #   min_vram_gb   minimum single-card VRAM; offers below this are hidden
 #   disk_gb       instance disk size (must exceed the model download size)
 #   context       -c context length (real server window)
+#   context_by_vram  optional {minimum VRAM GB: context} tiers; the selected
+#                    offer determines the launch context and OpenCode limit
 #   opencode_context_pct  opencode limit.context as % of context (set to 75 in
 #                         `defaults:`; override per model). <100 leaves a buffer so
 #                         auto-compact fires before a big turn overshoots the server.
@@ -109,6 +111,10 @@ models:
     min_vram_gb: 24
     disk_gb: 60
     context: 262144
+    context_by_vram:
+      24: 65536
+      32: 131072
+      48: 262144
     image: vastai/llama-cpp:b10331-cuda-12.9   # released 2026-08-14 — needs a recent build
     extra_args: "--jinja -fa on --parallel 1 -t 8 --spec-default --spec-type draft-mtp --spec-draft-n-max 1 --spec-draft-type-k f16 --spec-draft-type-v f16 --cache-type-k q8_0 --cache-type-v q8_0 --temperature 1.0 --top-p 0.95 --top-k 30 --min-p 0.0 --presence-penalty 0.0 --metrics"
 

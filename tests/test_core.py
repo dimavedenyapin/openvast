@@ -26,6 +26,7 @@ from openvast import (
     min_vram_mb,
     model_for_label,
     offer_query,
+    build_onstart,
 )
 
 
@@ -68,6 +69,25 @@ def test_min_vram_mb_allows_headroom_under_nominal():
     # -1GB fudge factor must not reject those real-world cards.
     assert min_vram_mb(model) == 24 * 1024 - 1024
     assert gb(24564) >= gb(min_vram_mb(model))
+
+
+def test_context_for_vram_uses_largest_matching_tier():
+    model = Model(
+        key="m", name="M", hf="x", min_vram_gb=24, disk_gb=80,
+        context=262144, context_by_vram={24: 65536, 32: 131072, 48: 262144},
+    )
+    assert model.context_for_vram(24576) == 65536
+    assert model.context_for_vram(32768) == 131072
+    assert model.context_for_vram(49140) == 262144
+
+
+def test_build_onstart_uses_vram_specific_context():
+    model = Model(
+        key="m", name="M", hf="x", min_vram_gb=24, disk_gb=80,
+        context=262144, context_by_vram={24: 65536, 48: 262144},
+    )
+    assert "-c 65536" in build_onstart(model, 24576)
+    assert "-c 262144" in build_onstart(model, 49152)
 
 
 # --------------------------------------------------------------------------- #
