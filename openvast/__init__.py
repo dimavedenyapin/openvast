@@ -123,7 +123,6 @@ class Model:
                 context = tier_context
         return context
 
-
 # Built-in fallback used only if models.yaml is missing/unreadable.
 _FALLBACK = {
     "default_model": "qwen3.6-35b-a3b",
