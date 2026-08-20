@@ -149,7 +149,8 @@ instance disk for features not yet included in the stock image.
 | 24 GB | Mistral Small 3.2 24B | `mistral-small-3.2-24b` | Q4_K_M | ~14.3 GB | 65536 |
 | 24 GB | Gemma 3 27B | `gemma-3-27b` | Q4_K_M | ~16.5 GB | 65536 |
 | 24 GB | Gemma 4 26B-A4B MoE | `gemma-4-26b-a4b` | UD-Q4_K_XL | ~17 GB | 65536 |
-| 24 / 32 GB | Qwen3.8 27B + DFlash2 | `qwen3.8-27b` | UD-Q4_K_XL + Q4_K_M draft | ~18 GB | 220000 / 262144 |
+| 24 / 32 GB | Qwen3.8 27B DFlash2 | `qwen3.8-27b` | UD-Q4_K_XL + Q4_K_M draft | ~18 GB | 220000 / 262144 |
+| 24 / 32 GB | Qwen3.8 27B native MTP | `qwen3.8-27b-mtp` | Q4_K_M + Q8 KV | ~17.1 GB | 65536 / 131072 |
 | 24 GB | Qwen3.6 27B dense | `qwen3.6-27b` | Q4_K_M | ~16.8 GB | 65536 |
 | 24 GB | Qwen3 32B dense | `qwen3-32b` | Q4_K_M | ~19.8 GB | 40960 |
 | 24 GB | Qwen3 Coder 30B A3B | `qwen3-coder-30b-a3b` | UD-Q4_K_M | ~18.6 GB | 65536 |

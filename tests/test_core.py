@@ -119,6 +119,23 @@ def test_bundled_qwen_dflash_uses_full_context_on_32gb():
     assert model.context_for_vram(32607) == 262144
 
 
+def test_bundled_qwen_native_mtp_restores_pre_dflash_settings():
+    from openvast import MODELS
+
+    dflash = MODELS["qwen3.8-27b"]
+    mtp = MODELS["qwen3.8-27b-mtp"]
+    assert dflash.draft_hf is not None
+    assert "draft-dflash" in dflash.extra_args
+    assert mtp.hf == "unsloth/Qwen3.8-27B-GGUF:Q4_K_M"
+    assert mtp.draft_hf is None
+    assert mtp.min_vram_gb == 24
+    assert mtp.context_for_vram(24564) == 65536
+    assert mtp.context_for_vram(32607) == 131072
+    assert "draft-mtp" in mtp.extra_args
+    assert "cache-type-k q8_0" in mtp.extra_args
+    assert "cache-type-v q8_0" in mtp.extra_args
+
+
 # --------------------------------------------------------------------------- #
 # offer_query()
 # --------------------------------------------------------------------------- #
