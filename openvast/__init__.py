@@ -30,6 +30,7 @@ import argparse
 import json
 import os
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -110,6 +111,8 @@ class Model:
     tool_call: bool = True
     reasoning: bool = True
     reasoning_effort: str = "medium"
+    draft_hf: str | None = None  # -hfd repo:quant for speculative decoding
+    llama_cpp_ref: str | None = None  # git ref fetched from ggml-org/llama.cpp
 
     def context_for_vram(self, gpu_ram_mb: int) -> int:
         """Largest configured context tier supported by this card's VRAM."""
@@ -119,7 +122,6 @@ class Model:
             if gpu_ram_mb >= min_gb * 1024 - 1024:
                 context = tier_context
         return context
-
 
 # Built-in fallback used only if models.yaml is missing/unreadable.
 _FALLBACK = {
@@ -151,6 +153,8 @@ def _model_from_dict(d: dict) -> Model:
         tool_call=bool(d.get("tool_call", True)),
         reasoning=bool(d.get("reasoning", True)),
         reasoning_effort=str(d.get("reasoning_effort", "medium")),
+        draft_hf=str(d["draft_hf"]) if d.get("draft_hf") else None,
+        llama_cpp_ref=str(d["llama_cpp_ref"]) if d.get("llama_cpp_ref") else None,
     )
 
 
@@ -542,10 +546,38 @@ def _ssh_perms_cmd() -> str:
 
 def build_onstart(model: Model, gpu_ram_mb: int | None = None) -> str:
     context = model.context_for_vram(gpu_ram_mb) if gpu_ram_mb else model.context
+    draft_arg = f" -hfd {shlex.quote(model.draft_hf)}" if model.draft_hf else ""
     primary = (
-        f"./llama-server -hf {model.hf} --host 0.0.0.0 --port {model.port} "
+        f"./llama-server -hf {shlex.quote(model.hf)}{draft_arg} "
+        f"--host 0.0.0.0 --port {model.port} "
         f"-ngl 999 -c {context} {model.extra_args}"
     )
+
+    if model.llama_cpp_ref:
+        # The stock Vast image supplies CUDA, nvcc, cmake, and git. Build an
+        # unmerged llama.cpp ref once on the persistent instance disk; resumes
+        # reuse the binary. Keep the setup in tmux so its progress is visible
+        # through the normal log viewer.
+        custom_dir = "/root/llama.cpp-custom"
+        ref = shlex.quote(model.llama_cpp_ref)
+        setup = (
+            f"mkdir -p {custom_dir} && cd {custom_dir} && "
+            "if [ ! -d .git ]; then git clone --depth 1 "
+            "https://github.com/ggml-org/llama.cpp.git .; fi && "
+            f"git fetch origin {ref} && git switch -C openvast-custom FETCH_HEAD && "
+            "if [ ! -x build/bin/llama-server ]; then "
+            "apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y "
+            "libcublas-dev-12-9 && "
+            "PATH=/usr/local/cuda-12.9/bin:$PATH cmake -B build -DGGML_CUDA=ON "
+            "-DCMAKE_BUILD_TYPE=Release && "
+            "PATH=/usr/local/cuda-12.9/bin:$PATH cmake --build build -j --target llama-server; "
+            "fi && cd build/bin && export LD_LIBRARY_PATH=$PWD:$LD_LIBRARY_PATH && "
+        )
+        return (
+            f"{_ssh_perms_cmd()} "
+            f"tmux new -d -s {SESSION} '{setup}{primary} 2>&1 | tee /root/llama.log'"
+        )
+
     return (
         f"{_ssh_perms_cmd()} cd {LLAMA_DIR} && "
         f"export LD_LIBRARY_PATH={LLAMA_DIR}:$LD_LIBRARY_PATH && "

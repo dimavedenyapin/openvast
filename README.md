@@ -131,9 +131,11 @@ models:
 Ships with ~20 curated models across the **16 / 24 / 32 / 48 / 80 / 96 GB**
 tiers (Qwen3.8, Qwen3.6, Qwen3-Coder, Qwen3-Next, gpt-oss, Gemma, Mistral, Devstral,
 Llama, GLM-4.5-Air, …), each with a verified GGUF size and VRAM requirement.
-Per-model keys: `name`, `hf`, `min_vram_gb`, `disk_gb`, `context`, `port`,
-`image`, `extra_args`, `output_limit`, `tool_call`, `reasoning`,
-`reasoning_effort`.
+Per-model keys: `name`, `hf`, `draft_hf`, `llama_cpp_ref`, `min_vram_gb`,
+`disk_gb`, `context`, `port`, `image`, `extra_args`, `output_limit`,
+`tool_call`, `reasoning`, `reasoning_effort`. `draft_hf` enables a separate
+speculative draft GGUF; `llama_cpp_ref` builds an upstream git ref once on the
+instance disk for features not yet included in the stock image.
 
 ### Bundled models
 
@@ -147,7 +149,8 @@ Per-model keys: `name`, `hf`, `min_vram_gb`, `disk_gb`, `context`, `port`,
 | 24 GB | Mistral Small 3.2 24B | `mistral-small-3.2-24b` | Q4_K_M | ~14.3 GB | 65536 |
 | 24 GB | Gemma 3 27B | `gemma-3-27b` | Q4_K_M | ~16.5 GB | 65536 |
 | 24 GB | Gemma 4 26B-A4B MoE | `gemma-4-26b-a4b` | UD-Q4_K_XL | ~17 GB | 65536 |
-| 24 GB | Qwen3.8 27B dense | `qwen3.8-27b` | Q4_K_M | ~17.1 GB | 262144 |
+| 24 / 32 GB | Qwen3.8 27B DFlash2 | `qwen3.8-27b` | UD-Q4_K_XL + Q4_K_M draft | ~18 GB | 220000 / 262144 |
+| 24 / 32 GB | Qwen3.8 27B native MTP | `qwen3.8-27b-mtp` | Q4_K_M + Q8 KV | ~17.1 GB | 65536 / 131072 |
 | 24 GB | Qwen3.6 27B dense | `qwen3.6-27b` | Q4_K_M | ~16.8 GB | 65536 |
 | 24 GB | Qwen3 32B dense | `qwen3-32b` | Q4_K_M | ~19.8 GB | 40960 |
 | 24 GB | Qwen3 Coder 30B A3B | `qwen3-coder-30b-a3b` | UD-Q4_K_M | ~18.6 GB | 65536 |

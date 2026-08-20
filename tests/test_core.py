@@ -90,6 +90,52 @@ def test_build_onstart_uses_vram_specific_context():
     assert "-c 262144" in build_onstart(model, 49152)
 
 
+def test_build_onstart_supports_dflash_draft_and_custom_llama_ref():
+    model = Model(
+        key="qwen-dflash",
+        name="Qwen DFlash",
+        hf="org/target:UD-Q4_K_XL",
+        draft_hf="org/draft:Q4_K_M",
+        llama_cpp_ref="pull/27342/head",
+        min_vram_gb=24,
+        disk_gb=60,
+        context=110000,
+        extra_args="--spec-type draft-dflash --spec-draft-n-max 4",
+    )
+    command = build_onstart(model, 24564)
+    assert "git fetch origin pull/27342/head" in command
+    assert "libcublas-dev-12-9" in command
+    assert "-hf org/target:UD-Q4_K_XL" in command
+    assert "-hfd org/draft:Q4_K_M" in command
+    assert "--spec-type draft-dflash --spec-draft-n-max 4" in command
+    assert "-c 110000" in command
+
+
+def test_bundled_qwen_dflash_uses_full_context_on_32gb():
+    from openvast import MODELS
+
+    model = MODELS["qwen3.8-27b"]
+    assert model.context_for_vram(24564) == 220000
+    assert model.context_for_vram(32607) == 262144
+
+
+def test_bundled_qwen_native_mtp_restores_pre_dflash_settings():
+    from openvast import MODELS
+
+    dflash = MODELS["qwen3.8-27b"]
+    mtp = MODELS["qwen3.8-27b-mtp"]
+    assert dflash.draft_hf is not None
+    assert "draft-dflash" in dflash.extra_args
+    assert mtp.hf == "unsloth/Qwen3.8-27B-GGUF:Q4_K_M"
+    assert mtp.draft_hf is None
+    assert mtp.min_vram_gb == 24
+    assert mtp.context_for_vram(24564) == 65536
+    assert mtp.context_for_vram(32607) == 131072
+    assert "draft-mtp" in mtp.extra_args
+    assert "cache-type-k q8_0" in mtp.extra_args
+    assert "cache-type-v q8_0" in mtp.extra_args
+
+
 # --------------------------------------------------------------------------- #
 # offer_query()
 # --------------------------------------------------------------------------- #

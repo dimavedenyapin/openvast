@@ -8,6 +8,9 @@
 #   key           unique id, used as the label on the vast instance + opencode model id
 #   name          human label shown in the UI and opencode
 #   hf            llama.cpp -hf argument (repo:quant)
+#   draft_hf      optional llama.cpp -hfd argument (draft repo:quant)
+#   llama_cpp_ref optional upstream git ref to compile inside the instance;
+#                 useful for features not yet present in the stock image
 #   min_vram_gb   minimum single-card VRAM; offers below this are hidden
 #   disk_gb       instance disk size (must exceed the model download size)
 #   context       -c context length (real server window)
@@ -106,7 +109,22 @@ models:
     reasoning: false
 
   - key: qwen3.8-27b
-    name: Qwen3.8 27B dense (Q4)           # ~17.1 GB · newest gen, thinking + vision
+    name: Qwen3.8 27B DFlash2 (Q4)         # 24 GB: 220k safe, 240k redline; 32 GB: full 262k
+    hf: unsloth/Qwen3.8-27B-GGUF:UD-Q4_K_XL
+    draft_hf: z-lab/Qwen3.8-27B-DFlash2-GGUF:Q4_K_M
+    llama_cpp_ref: pull/27342/head
+    min_vram_gb: 24
+    disk_gb: 60
+    context: 262144
+    context_by_vram:
+      24: 220000
+      32: 262144
+      48: 262144
+    image: vastai/llama-cpp:b10331-cuda-12.9
+    extra_args: "--jinja -fa on --parallel 1 -t 8 --spec-type draft-dflash --spec-draft-n-max 4 --cache-type-k q4_0 --cache-type-v q4_0 --temperature 1.0 --top-p 0.95 --top-k 30 --min-p 0.0 --presence-penalty 0.0 --metrics"
+
+  - key: qwen3.8-27b-mtp
+    name: Qwen3.8 27B native MTP (Q8 KV)   # original pre-DFlash configuration
     hf: unsloth/Qwen3.8-27B-GGUF:Q4_K_M
     min_vram_gb: 24
     disk_gb: 60
@@ -115,7 +133,7 @@ models:
       24: 65536
       32: 131072
       48: 262144
-    image: vastai/llama-cpp:b10331-cuda-12.9   # released 2026-08-14 — needs a recent build
+    image: vastai/llama-cpp:b10331-cuda-12.9
     extra_args: "--jinja -fa on --parallel 1 -t 8 --spec-default --spec-type draft-mtp --spec-draft-n-max 1 --spec-draft-type-k f16 --spec-draft-type-v f16 --cache-type-k q8_0 --cache-type-v q8_0 --temperature 1.0 --top-p 0.95 --top-k 30 --min-p 0.0 --presence-penalty 0.0 --metrics"
 
   - key: qwen3.6-27b
